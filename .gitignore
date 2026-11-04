@@ -1,0 +1,11 @@
+# generated test lab
+tests/node_modules/
+tests/media/
+tests/hls_fmp4/
+tests/hls_ts/
+tests/dl/
+tests/.ext-open/
+tests/server.log
+tests/package-lock.json
+# build output
+*.zip
