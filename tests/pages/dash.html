@@ -1,0 +1,18 @@
+<!DOCTYPE html><html><head><title>Reel by Someone | Facebook</title>
+<style>body{font-family:sans-serif;margin:0;padding:20px} .wrap{position:relative;width:360px;height:640px;background:#000}
+.ov{position:absolute;inset:0;z-index:5}</style></head><body>
+<h3>Facebook-style player: split video + audio via MSE (blob:)</h3>
+<div class="wrap"><video id="v" playsinline muted loop style="width:360px;height:640px"></video><div class="ov"></div></div>
+<script>
+const V = '/cdn/fb_video.mp4?efg=eyJ2ZW5jb2RlX3RhZyI6ImRhc2hfYmFzZWxpbmVfMV92MV8zNjBwIiwiZHVyYXRpb25fcyI6MjAsInhwdl9hc3NldF9pZCI6MTIzfQ&_nc_ht=x', A = '/cdn/fb_audio.mp4?efg=eyJ2ZW5jb2RlX3RhZyI6ImRhc2hfbG5faGVhYWNfdmJyM19hdWRpbyIsImR1cmF0aW9uX3MiOjIwLCJ4cHZfYXNzZXRfaWQiOjEyM30&_nc_ht=x';
+const v = document.getElementById('v');
+const ms = new MediaSource(); v.src = URL.createObjectURL(ms);
+const get = async (u, s, e) => new Uint8Array(await (await fetch(u + '&bytestart=' + s + '&byteend=' + e)).arrayBuffer());
+const app = (sb, d) => new Promise(r => { sb.addEventListener('updateend', r, { once: true }); sb.appendBuffer(d); });
+ms.addEventListener('sourceopen', async () => {
+  const vb = ms.addSourceBuffer('video/mp4; codecs="avc1.42c01e"'), ab = ms.addSourceBuffer('audio/mp4; codecs="mp4a.40.2"');
+  await app(vb, await get(V, 0, 999999)); await app(vb, await get(V, 1000000, 99999999));
+  await app(ab, await get(A, 0, 99999)); await app(ab, await get(A, 100000, 99999999));
+  ms.endOfStream(); window.ready = true;
+});
+</script><div style="height:1500px"></div></body></html>

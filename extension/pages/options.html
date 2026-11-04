@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VidFix settings</title>
+<link rel="stylesheet" href="options.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="../icons/icon48.png" alt="" width="40" height="40">
+    <div>
+      <h1>VidFix settings</h1>
+      <p class="sub">Changes save automatically and apply to open tabs right away.</p>
+    </div>
+  </header>
+
+  <section id="welcome" class="welcome" hidden>
+    <h2>You're all set</h2>
+    <p>Open any page with a video and move your mouse over it. A control bar appears with play/pause, a seek bar, volume (up to boost), speed, loop, picture-in-picture, fullscreen and a download button.</p>
+    <p>Shortcuts work while your mouse is over a video. Click the VidFix icon in the toolbar for quick controls.</p>
+  </section>
+
+  <section>
+    <h2>Control bar</h2>
+    <div class="field">
+      <label for="barMode">Show the control bar</label>
+      <select id="barMode">
+        <option value="hover">When my mouse is over a video</option>
+        <option value="always">Always, on the main video</option>
+        <option value="off">Never (keyboard shortcuts only)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="barPosition">Bar position</label>
+      <select id="barPosition">
+        <option value="bottom">Bottom of the video</option>
+        <option value="top">Top of the video (if it covers site buttons)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="autoHideMs">Hide the bar after</label>
+      <select id="autoHideMs">
+        <option value="1500">1.5 seconds</option>
+        <option value="2500">2.5 seconds</option>
+        <option value="4000">4 seconds</option>
+        <option value="8000">8 seconds</option>
+      </select>
+    </div>
+  </section>
+
+  <section>
+    <h2>Speed and sound</h2>
+    <label class="check"><input type="checkbox" id="rememberSpeed"> Remember my speed for each website</label>
+    <label class="check"><input type="checkbox" id="lockSpeed"> Keep my speed when a site tries to reset it (on pause, seek or next video)</label>
+    <label class="check"><input type="checkbox" id="rememberVolume"> Remember my volume for each website</label>
+    <label class="check"><input type="checkbox" id="startUnmuted"> Start videos with sound (sites like Facebook and Instagram start muted)</label>
+    <label class="check"><input type="checkbox" id="blockAutoplay"> Stop videos from playing on their own (autoplay)</label>
+    <div class="field">
+      <label for="maxBoost">Maximum volume boost</label>
+      <select id="maxBoost">
+        <option value="100">100% (no boost)</option>
+        <option value="200">200%</option>
+        <option value="300">300%</option>
+        <option value="400">400%</option>
+        <option value="600">600%</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="seekStep">Rewind / forward step</label>
+      <select id="seekStep">
+        <option value="2">2 seconds</option>
+        <option value="5">5 seconds</option>
+        <option value="10">10 seconds</option>
+        <option value="15">15 seconds</option>
+        <option value="30">30 seconds</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="speedStep">Speed step</label>
+      <select id="speedStep">
+        <option value="0.05">0.05x</option>
+        <option value="0.1">0.1x</option>
+        <option value="0.25">0.25x</option>
+        <option value="0.5">0.5x</option>
+      </select>
+    </div>
+  </section>
+
+  <section>
+    <h2>Keyboard shortcuts</h2>
+    <label class="check"><input type="checkbox" id="shortcutsEnabled"> Use keyboard shortcuts</label>
+    <p class="hint">Shortcuts only work while your mouse is over a video (or in fullscreen), never while you type in a text box. Click a key to change it, then press the new key. Press Backspace to clear.</p>
+    <div id="keys" class="keys"></div>
+    <button id="resetKeys" class="secondary">Reset shortcuts</button>
+  </section>
+
+  <section>
+    <h2>Sites</h2>
+    <label class="check"><input type="checkbox" id="enabled"> VidFix is on</label>
+    <p class="hint">Sites where VidFix is turned off (use the switch in the toolbar popup to add a site):</p>
+    <div id="sites" class="sites"></div>
+  </section>
+
+  <section>
+    <h2>Privacy</h2>
+    <p class="hint">VidFix has no servers, no accounts, no ads and no analytics. Your settings stay in your browser. Videos are downloaded straight from the site to your computer. On YouTube, saving is turned off because the Chrome Web Store does not allow it. DRM-protected videos (Netflix, Prime Video and similar) are never saved.</p>
+  </section>
+  <p class="saved" id="saved">Saved</p>
+</div>
+<script src="../src/shared.js"></script>
+<script src="options.js"></script>
+</body>
+</html>

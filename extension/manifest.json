@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "VidFix: Video Controls & Downloader for Any Site",
+  "short_name": "VidFix",
+  "version": "1.0.0",
+  "description": "Real controls for any web video: seek bar, speed, volume boost, PiP, loop, shortcuts. Save videos with sound in one file.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "VidFix",
+    "default_popup": "pages/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
+  },
+  "options_page": "pages/options.html",
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "permissions": ["storage", "downloads"],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/netwatch.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/shared.js", "src/mp4.js", "src/hls.js", "src/sources.js", "src/content.js"],
+      "run_at": "document_idle",
+      "all_frames": true,
+      "match_about_blank": true
+    }
+  ],
+  "minimum_chrome_version": "116"
+}
