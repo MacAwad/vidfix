@@ -1,0 +1,7 @@
+<!DOCTYPE html><html><head><title>Direct file page (strict like Facebook)</title>
+<style>body{font-family:sans-serif;margin:0;padding:20px} .wrap{position:relative;width:640px;height:360px}
+video::-webkit-media-controls{display:none!important} .ov{position:absolute;inset:0;z-index:5}</style></head><body>
+<h3>Direct video under a click-eating overlay</h3>
+<input id="txt" placeholder="type here" style="width:300px">
+<div class="wrap"><video id="v" src="/media/progressive.mp4" playsinline muted style="width:640px;height:360px;background:#000"></video><div class="ov" onclick="event.stopPropagation()"></div></div>
+<div style="height:1500px"></div></body></html>

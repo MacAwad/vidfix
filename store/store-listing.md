@@ -55,6 +55,7 @@ VidFix gives users full playback controls for videos on any website (play, seek,
 - Host permission (all sites): Videos can appear on any website. VidFix needs to add its control bar to those videos and read which video stream the page already loaded so the user can save it. It only acts on pages that contain a video.
 - downloads: Saves the video file the user chose to their Downloads folder.
 - storage: Saves the user's settings, shortcuts and per-site speed and volume in the browser.
+- webRequest: Read-only. Notes the address of video streams a tab loads (including streams loaded by the page's background workers, which the page itself cannot list) so the user can save the video they are watching. Kept in session memory per tab, cleared when the tab navigates or closes, never sent anywhere. No requests are blocked or modified.
 
 ## Remote code
 No. All code is in the package.

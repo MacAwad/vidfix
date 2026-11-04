@@ -132,7 +132,15 @@
         } });
     }
 
-    const net = (window.__vfNet && Array.from(window.__vfNet.entries.values())) || [];
+    // Streams this frame loaded itself, plus streams the background saw for this tab
+    // (players that download inside a Web Worker, like Facebook and Instagram, only show up there).
+    const merged = new Map();
+    for (const e of (window.__vfNet ? window.__vfNet.entries.values() : [])) merged.set(e.url, { url: e.url, kind: e.kind, last: Date.now() - (performance.now() - e.last) });
+    try {
+      const bg = await chrome.runtime.sendMessage({ type: 'vf:net' });
+      for (const e of (bg && bg.entries) || []) if (!merged.has(e.url)) merged.set(e.url, e);
+    } catch (e) { /* background unavailable */ }
+    const net = Array.from(merged.values());
     net.sort((a, b) => b.last - a.last);
     const hlsUrls = new Set(net.filter((e) => e.kind === 'hls').map((e) => e.url));
     for (const u of direct) if (/\.m3u8(\?|$)/i.test(u)) hlsUrls.add(u);

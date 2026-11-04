@@ -7,17 +7,20 @@
 </head>
 <body>
   <header>
-    <img src="../icons/icon32.png" alt="" width="22" height="22">
-    <div class="title">VidFix</div>
+    <img src="../icons/icon32.png" alt="" width="24" height="24">
+    <div class="titles">
+      <div class="title">VidFix</div>
+      <div id="site" class="site"></div>
+    </div>
     <label class="switch" title="Turn VidFix on or off for this site">
       <input type="checkbox" id="siteToggle">
       <span class="slider"></span>
     </label>
   </header>
-  <div id="site" class="site"></div>
-  <main id="list"></main>
+  <main id="main"></main>
   <footer>
     <button id="opts" class="link">Settings and shortcuts</button>
+    <span class="keys">Hover a video: K pause · J/L seek · S/D speed</span>
   </footer>
   <script src="../src/shared.js"></script>
   <script src="popup.js"></script>

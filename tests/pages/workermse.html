@@ -1,0 +1,8 @@
+<!DOCTYPE html><html><head><title>Reels | Facebook</title><style>body{margin:0;padding:20px;font-family:sans-serif}.wrap{position:relative;width:360px;height:640px;background:#000}.ov{position:absolute;inset:0}</style></head><body>
+<h3>MSE in a worker (video.srcObject = MediaSourceHandle)</h3>
+<div class="wrap"><video id="v" muted playsinline loop style="width:360px;height:640px"></video><div class="ov"></div></div>
+<script>
+const v = document.getElementById('v');
+const w = new Worker('/p/worker.js');
+w.onmessage = (e) => { if (e.data.handle) v.srcObject = e.data.handle; if (e.data.ready) window.ready = true; };
+</script></body></html>

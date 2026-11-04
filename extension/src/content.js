@@ -248,7 +248,9 @@
   let pmPending = false;
 
   // Live camera / screen-share feeds (video calls) are left alone.
-  const isLiveFeed = (v) => !!v.srcObject && !v.currentSrc;
+  // Only real camera / screen-share streams count. Facebook and Instagram feed normal videos through
+  // a worker (srcObject = MediaSourceHandle), and those must NOT be skipped.
+  const isLiveFeed = (v) => typeof MediaStream !== 'undefined' && v.srcObject instanceof MediaStream;
 
   const visibleRect = (v) => {
     if (isLiveFeed(v)) return null;
@@ -1024,11 +1026,28 @@
     if (msg.type === 'vf:list') {
       const vids = allVideos(true).filter((v) => !isLiveFeed(v) && (v.readyState > 0 || v.currentSrc));
       if (!vids.length) return false;
+      const score = (v) => {
+        const r = visibleRect(v);
+        if (!r) return 0;
+        const w = Math.min(r.right, innerWidth) - Math.max(r.left, 0), h = Math.min(r.bottom, innerHeight) - Math.max(r.top, 0);
+        return Math.max(0, w) * Math.max(0, h) * (v.paused ? 1 : 3);
+      };
+      const thumb = (v) => {
+        try {
+          if (!v.videoWidth) return null;
+          const c = document.createElement('canvas');
+          const k = 96 / Math.max(v.videoWidth, v.videoHeight);
+          c.width = Math.round(v.videoWidth * k); c.height = Math.round(v.videoHeight * k);
+          c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+          return c.toDataURL('image/jpeg', 0.7);
+        } catch (e) { return null; }
+      };
+      const sorted = vids.map((v) => ({ v, s: score(v) })).sort((a, b) => b.s - a.s);
       reply({
         frame: IS_TOP ? 'top' : location.hostname, enabled, host: HOST,
-        videos: vids.map((v) => ({ id: idOf(v), w: v.videoWidth, h: v.videoHeight, duration: v.duration, time: v.currentTime,
-          paused: v.paused, muted: v.muted, rate: v.playbackRate, volume: volumePct(v), visible: !!visibleRect(v),
-          protected: !!v.mediaKeys }))
+        videos: sorted.map(({ v, s }, i) => ({ id: idOf(v), w: v.videoWidth, h: v.videoHeight, duration: v.duration, time: v.currentTime,
+          paused: v.paused, muted: v.muted, rate: v.playbackRate, volume: volumePct(v), visible: s > 0, main: i === 0 && s > 0,
+          protected: !!v.mediaKeys, thumb: i < 6 ? thumb(v) : null }))
       });
       return false;
     }

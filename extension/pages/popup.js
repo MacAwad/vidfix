@@ -2,6 +2,7 @@
 const VF = globalThis.VF;
 const $ = (id) => document.getElementById(id);
 let tab = null, host = '', settings = VF.cloneDefaults();
+let videos = [], selected = null;
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
@@ -9,9 +10,15 @@ function el(tag, cls, text) {
   if (text !== undefined) e.textContent = text;
   return e;
 }
-
 async function send(msg) {
   try { return await chrome.tabs.sendMessage(tab.id, msg); } catch (e) { return null; }
+}
+const metaOf = (v) => [isFinite(v.duration) ? VF.fmtTime(v.duration) : 'Live', v.paused ? 'paused' : 'playing', v.muted ? 'muted' : '']
+  .filter(Boolean).join(' · ');
+function thumbEl(v, cls) {
+  const t = el('div', cls || 'thumb');
+  if (v.thumb) t.style.backgroundImage = `url("${v.thumb}")`;
+  return t;
 }
 
 async function init() {
@@ -22,87 +29,113 @@ async function init() {
   settings = VF.mergeSettings(saved);
   try { host = VF.hostKey(new URL(tab.url).hostname); } catch (e) { host = ''; }
   const toggle = $('siteToggle');
-  if (!host || !/^https?:|^file:/.test(tab.url)) {
-    $('site').textContent = 'VidFix does not run on this page.';
+  if (!host || !/^(https?|file):/.test(tab.url)) {
+    $('site').textContent = 'Not available on this page';
     toggle.disabled = true;
-    $('list').append(el('div', 'empty', 'Open a page with a video to use VidFix.'));
+    empty('Nothing to control here', 'Open a page with a video.');
     return;
   }
   const on = settings.enabled && !settings.disabledSites.includes(host);
   toggle.checked = on;
-  $('site').textContent = on ? 'On for ' + host : 'Off for ' + host;
+  $('site').textContent = (on ? 'On for ' : 'Off for ') + host;
   toggle.addEventListener('change', async () => {
     const list = settings.disabledSites.filter((h) => h !== host);
-    if (!toggle.checked) list.push(host);
+    if (!toggle.checked) list.push(host); else settings.enabled = true;
     settings.disabledSites = list;
-    if (toggle.checked) settings.enabled = true;
     await chrome.storage.sync.set({ settings });
     $('site').textContent = (toggle.checked ? 'On for ' : 'Off for ') + host;
-    render();
+    load();
   });
+  load();
+}
+
+function empty(title, text) {
+  const m = $('main');
+  m.textContent = '';
+  const d = el('div', 'empty');
+  d.append(el('b', '', title), document.createTextNode(text));
+  m.append(d);
+}
+
+async function load() {
+  const res = await send({ type: 'vf:list' });
+  if (!res) {
+    empty('No video found', 'Play a video, then click VidFix again. Just installed VidFix? Refresh this page first.');
+    return;
+  }
+  if (!res.enabled) { empty('VidFix is off for this site', 'Turn it on with the switch above.'); return; }
+  videos = res.videos || [];
+  if (!videos.length) { empty('No video found', 'Play a video, then click VidFix again.'); return; }
+  if (!selected || !videos.some((v) => v.id === selected)) selected = videos[0].id;
   render();
 }
 
-async function render() {
-  const list = $('list');
-  list.textContent = '';
-  const res = await send({ type: 'vf:list' });
-  if (!res || !res.videos || !res.videos.length) {
-    list.append(el('div', 'empty', 'No videos found on this page yet. Start playing one, then open VidFix again.'));
-    return;
-  }
-  const vids = res.videos.slice().sort((a, b) => (b.visible - a.visible) || (a.paused - b.paused));
-  vids.slice(0, 6).forEach((v, i) => list.append(card(v, i)));
-  if (!res.enabled) list.prepend(el('div', 'note', 'VidFix is off for this site. Turn it on with the switch above.'));
-}
+function render() {
+  const m = $('main');
+  m.textContent = '';
+  const v = videos.find((x) => x.id === selected);
+  const noDl = !!VF.siteRule(host).noDownload;
 
-function card(v, i) {
-  const c = el('div', 'card');
-  const h = el('h3', '', 'Video ' + (i + 1));
-  const meta = [v.w && v.h ? `${v.w}x${v.h}` : '', isFinite(v.duration) ? VF.fmtTime(v.duration) : 'live', v.paused ? 'paused' : 'playing']
-    .filter(Boolean).join(' · ');
-  h.append(el('span', '', meta));
-  c.append(h);
+  const now = el('div', 'now');
+  const info = el('div');
+  info.append(el('div', 't', v.main || v.id === videos[0].id ? 'Video on screen' : 'Selected video'), el('div', 'm', metaOf(v)));
+  now.append(thumbEl(v), info);
+  m.append(now);
 
-  const sp = el('div', 'row');
-  sp.append(el('label', '', 'Speed'));
-  for (const r of [0.75, 1, 1.25, 1.5, 2, 3]) {
-    const b = el('button', 'chip' + (Math.abs(v.rate - r) < 0.01 ? ' on' : ''), r + 'x');
+  const sl = el('div', 'label');
+  sl.append(el('span', '', 'Speed'), el('span', '', (Math.round(v.rate * 100) / 100) + 'x'));
+  m.append(sl);
+  const seg = el('div', 'seg');
+  for (const r of [0.5, 1, 1.25, 1.5, 2, 3]) {
+    const b = el('button', Math.abs(v.rate - r) < 0.01 ? 'on' : '', r + 'x');
     b.addEventListener('click', async () => {
       await send({ type: 'vf:act', id: v.id, action: 'speed', value: r });
-      sp.querySelectorAll('.chip').forEach((x) => x.classList.remove('on'));
-      b.classList.add('on');
+      v.rate = r;
+      render();
     });
-    sp.append(b);
+    seg.append(b);
   }
-  c.append(sp);
+  m.append(seg);
 
-  const vr = el('div', 'row');
-  vr.append(el('label', '', 'Volume'));
+  const vl = el('div', 'label');
+  const vval = el('span', '', v.muted ? 'muted' : v.volume + '%');
+  vl.append(el('span', '', 'Volume (over 100% = boost)'), vval);
+  m.append(vl);
   const range = el('input');
-  range.type = 'range'; range.min = 0; range.max = settings.maxBoost; range.value = v.volume;
-  const val = el('span', 'val', v.muted ? 'muted' : v.volume + '%');
+  range.type = 'range'; range.min = 0; range.max = settings.maxBoost; range.step = 5; range.value = v.volume;
   range.addEventListener('input', async () => {
     const r = await send({ type: 'vf:act', id: v.id, action: 'volume', value: Number(range.value) });
-    val.textContent = (r ? r.volume : range.value) + '%';
+    v.volume = r ? r.volume : Number(range.value);
+    v.muted = false;
+    vval.textContent = v.volume + '%';
   });
-  vr.append(range, val);
-  c.append(vr);
+  m.append(range);
 
-  const btns = el('div', 'btns');
+  const actions = el('div', 'actions');
+  const save = el('button', 'btn primary', 'Save video');
+  save.disabled = noDl || v.protected;
+  save.addEventListener('click', async () => { await send({ type: 'vf:act', id: v.id, action: 'download' }); window.close(); });
   const show = el('button', 'btn', 'Show controls');
+  show.title = 'Show the VidFix control bar on this video';
   show.addEventListener('click', async () => { await send({ type: 'vf:act', id: v.id, action: 'show' }); window.close(); });
-  const dl = el('button', 'btn primary', 'Save video');
-  dl.addEventListener('click', async () => { await send({ type: 'vf:act', id: v.id, action: 'download' }); window.close(); });
-  btns.append(show, dl);
-  c.append(btns);
-  if (v.protected) { dl.disabled = true; c.append(el('div', 'note', 'DRM-protected video: controls work, saving does not.')); }
-  if (VF.siteRule(host).noDownload) {
-    dl.disabled = true;
-    show.remove();
-    c.append(el('div', 'note', 'Saving from YouTube is not allowed by Chrome Web Store rules. Speed and volume boost still work.'));
+  actions.append(save, show);
+  m.append(actions);
+  if (noDl) m.append(el('div', 'note', 'Saving is turned off on YouTube (Chrome Web Store rule). Speed and boost still work.'));
+  else if (v.protected) m.append(el('div', 'note', 'This video is DRM-protected, so it cannot be saved.'));
+
+  const others = videos.filter((x) => x.id !== v.id);
+  if (others.length) {
+    const d = el('details', 'more');
+    d.append(el('summary', '', `${others.length} more video${others.length > 1 ? 's' : ''} on this page`));
+    for (const o of others.slice(0, 8)) {
+      const row = el('div', 'row');
+      const pick = el('button', '', 'Select');
+      pick.addEventListener('click', () => { selected = o.id; send({ type: 'vf:act', id: o.id, action: 'show' }); render(); });
+      row.append(thumbEl(o), el('div', 'm', metaOf(o)), pick);
+      d.append(row);
+    }
+    m.append(d);
   }
-  return c;
 }
 
 $('opts').addEventListener('click', () => chrome.runtime.openOptionsPage());

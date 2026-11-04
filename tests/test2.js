@@ -66,6 +66,27 @@ const probe = (f) => { try { return execSync(`ffprobe -v error -count_frames -sh
   const pr8 = await saveFlow('ts', 'Full video');
   check('ts: full stream saved', pr8 && /h264/.test(pr8) && /aac/.test(pr8) && /nb_read_frames=600/.test(pr8));
 
+  log('\n[8b] Facebook/Instagram-style player inside a Web Worker (srcObject = MediaSourceHandle)');
+  await page.goto(BASE + '/p/workermse.html');
+  await page.waitForFunction(() => window.ready, null, { timeout: 10000 });
+  await page.evaluate(() => document.getElementById('v').play());
+  await page.waitForTimeout(500);
+  await page.mouse.move(200, 300); await page.mouse.move(210, 310); await page.waitForTimeout(500);
+  check('bar appears on worker-fed video', await page.locator('vidfix-ui .bar.on').count() === 1);
+  await page.keyboard.press('k'); await page.waitForTimeout(150);
+  check('K pauses worker-fed video', await page.evaluate(() => document.getElementById('v').paused));
+  await page.keyboard.press('k');
+  const pr8b = await saveFlow('worker', 'Best quality (360p)');
+  check('worker: streams found via background, one file with sound', pr8b && /h264/.test(pr8b) && /aac/.test(pr8b) && /nb_read_frames=600/.test(pr8b));
+  const wTab = await sw.evaluate(() => new Promise(r => chrome.tabs.query({ url: 'http://localhost:8800/p/workermse.html' }, (t) => r(t[0].id))));
+  const popW = await ctx.newPage();
+  await popW.goto(`chrome-extension://${extId}/pages/popup.html?tab=${wTab}`);
+  await popW.waitForTimeout(800);
+  check('popup shows the worker-fed video with a thumbnail', /Video on screen/.test(await popW.locator('body').innerText()) && /url\("data:image/.test(await popW.locator('.now .thumb').getAttribute('style') || ''));
+  await popW.screenshot({ path: DL + 'popup_worker.png' });
+  await popW.close();
+  await page.bringToFront();
+
   log('\n[9] Shadow DOM player (Reddit-style) and iframe embed');
   await page.goto(BASE + '/p/shadow.html');
   await page.evaluate(() => document.getElementById('sp').shadowRoot.querySelector('video').play());
@@ -115,9 +136,9 @@ const probe = (f) => { try { return execSync(`ffprobe -v error -count_frames -sh
   await pop.goto(`chrome-extension://${extId}/pages/popup.html?tab=${ytTab}`);
   await pop.waitForTimeout(800);
   const popText = await pop.locator('body').innerText();
-  check('popup lists the video with speed + volume', /Video 1/.test(popText) && /Speed/.test(popText));
+  check('popup lists the video with speed + volume', /Video on screen/.test(popText) && /Speed/.test(popText));
   check('popup save button disabled on YouTube', await pop.locator('button.btn.primary').isDisabled());
-  await pop.locator('.chip', { hasText: '1.5x' }).click();
+  await pop.locator('.seg button', { hasText: '1.5x' }).click();
   await page.waitForTimeout(200);
   check('popup speed works on YouTube', (await page.evaluate(() => document.getElementById('v').playbackRate)) === 1.5);
   await pop.screenshot({ path: DL + 'popup_yt.png' });

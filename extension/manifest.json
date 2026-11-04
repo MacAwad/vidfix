@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "VidFix: Video Controls & Downloader for Any Site",
   "short_name": "VidFix",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Real controls for any web video: seek bar, speed, volume boost, PiP, loop, shortcuts. Save videos with sound in one file.",
   "icons": {
     "16": "icons/icon16.png",
@@ -22,7 +22,7 @@
   "background": {
     "service_worker": "src/background.js"
   },
-  "permissions": ["storage", "downloads"],
+  "permissions": ["storage", "downloads", "webRequest"],
   "host_permissions": ["<all_urls>"],
   "content_scripts": [
     {

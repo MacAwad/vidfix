@@ -40,8 +40,9 @@ Blocked by design: YouTube (Chrome Web Store policy), DRM-protected media (EME),
 
 - **Closed shadow DOM UI** appended outside the site's player, so the page cannot style or break it, and it never causes the black-screen issues seen when extensions inject into the player.
 - **Works under strict CSP / Trusted Types** (facebook.com blocks bookmarklets this way); content scripts run in an isolated world and build all UI with DOM APIs.
+- **Worker-fed video support**: videos whose `srcObject` is a `MediaSourceHandle` are treated as normal videos; only real `MediaStream` camera/screen feeds are skipped.
 - **Hover detection by geometry**, not event targets, so overlays on top of the video don't matter. Videos inside shadow DOM (Reddit's player) are found with `elementsFromPoint` only when the element under the mouse has a shadow root, so ordinary pages pay nothing.
-- **Stream discovery without the `webRequest` permission**: a `PerformanceObserver` on the page's own Resource Timing list notes `.m3u8`, `.mpd`, ranged (`bytestart`/`byteend`) and file URLs. Nothing leaves the tab.
+- **Stream discovery**: a `PerformanceObserver` on the page's Resource Timing list, plus a read-only `webRequest` listener in the background for players that download inside a Web Worker (Facebook and Instagram feed video through `video.srcObject = MediaSourceHandle`). Both note `.m3u8`, `.mpd`, ranged (`bytestart`/`byteend`) and file URLs per tab, in session memory only. Nothing is sent anywhere.
 - **In-browser MP4 muxer** (`src/mp4.js`): parses ISO-BMFF boxes, copies the video and audio `trak`s into a new `moov`, renumbers track IDs in `tkhd`/`trex`/`tfhd`, rebases `base_data_offset` when present, drops `sidx`/`styp`/`mfra`, and interleaves `moof`+`mdat` fragments by decode time.
 - **Matching**: candidate streams are matched to the video on screen by duration (from `efg` metadata, `sidx`, `mehd` or the playlist), so the user sees the right file first instead of a list of fragments.
 - **Volume boost safety**: Web Audio is only used on same-origin, `blob:` or CORS media; for cross-origin media it refuses with a message instead of silently muting the video.
@@ -55,12 +56,12 @@ To build the store package: `./build.sh` (creates `vidfix-extension.zip`).
 
 ## Tests
 
-`tests/` is a local lab that copies how real sites deliver video: a Trusted Types page with a click-eating overlay, a Facebook-style MSE player with split fragmented-MP4 streams, X-style HLS with a separate audio rendition, HLS with TS segments, a shadow-DOM player, an iframe embed, a player that resets speed, a page with no video, and a mocked YouTube page.
+`tests/` is a local lab that copies how real sites deliver video: a Trusted Types page with a click-eating overlay, a Facebook-style MSE player with split fragmented-MP4 streams, the same player running inside a Web Worker, X-style HLS with a separate audio rendition, HLS with TS segments, a shadow-DOM player, an iframe embed, a player that resets speed, a page with no video, and a mocked YouTube page.
 
 ```bash
 cd tests
 ./setup.sh   # needs ffmpeg and Node.js; generates test media, installs Playwright
-./run.sh     # 34 browser checks with the extension loaded
+./run.sh     # 39 browser checks with the extension loaded
 ```
 
 Downloads are checked with `ffprobe` (frame counts for both video and audio tracks).
